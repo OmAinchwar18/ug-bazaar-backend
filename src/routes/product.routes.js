@@ -1,0 +1,11 @@
+const express = require('express');
+const router  = express.Router();
+const Product = require('../models/Product');
+const { protect, adminOnly, optionalAuth } = require('../middleware/auth.middleware');
+router.get('/', optionalAuth, async (req,res) => { try { const {dept,sort,badge,inStock,page=1,limit=20}=req.query; const f={isActive:true}; if(dept)f.dept=dept; if(badge)f.badge=badge; if(inStock)f.stock={$gt:0}; const sortMap={'price-low':{price:1},'price-high':{price:-1},'rating':{'ratings.average':-1},'newest':{createdAt:-1}}; const [products,total]=await Promise.all([Product.find(f).sort(sortMap[sort]||{createdAt:-1}).skip((page-1)*limit).limit(+limit),Product.countDocuments(f)]); res.json({success:true,total,products}); } catch(e){ res.status(500).json({success:false,message:e.message}); }});
+router.get('/search', async (req,res) => { try { const {q,dept}=req.query; if(!q) return res.status(400).json({success:false,message:'Query required'}); const f={isActive:true,$text:{$search:q}}; if(dept)f.dept=dept; const products=await Product.find(f,{score:{$meta:'textScore'}}).sort({score:{$meta:'textScore'}}).limit(20); res.json({success:true,count:products.length,products}); } catch(e){ res.status(500).json({success:false,message:e.message}); }});
+router.get('/:id', async (req,res) => { try { const p=await Product.findById(req.params.id); if(!p||!p.isActive) return res.status(404).json({success:false,message:'Product nahi mila'}); res.json({success:true,product:p}); } catch(e){ res.status(500).json({success:false,message:e.message}); }});
+router.post('/', protect, adminOnly, async (req,res) => { try { const p=await Product.create(req.body); res.status(201).json({success:true,product:p}); } catch(e){ res.status(400).json({success:false,message:e.message}); }});
+router.put('/:id', protect, adminOnly, async (req,res) => { try { const p=await Product.findByIdAndUpdate(req.params.id,req.body,{new:true}); res.json({success:true,product:p}); } catch(e){ res.status(400).json({success:false,message:e.message}); }});
+router.delete('/:id', protect, adminOnly, async (req,res) => { try { await Product.findByIdAndUpdate(req.params.id,{isActive:false}); res.json({success:true,message:'Deleted'}); } catch(e){ res.status(500).json({success:false,message:e.message}); }});
+module.exports = router;
