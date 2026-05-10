@@ -20,9 +20,13 @@ app.use((req, res, next) => {
 });
 
 const { paymentRouter, cartRouter, reviewRouter, couponRouter, adminRouter, notifRouter } = require('./routes/other.routes');
-app.use('/api/auth',          require('./routes/auth.routes'));
-app.use('/api/products',      require('./routes/product.routes'));
-app.use('/api/orders',        require('./routes/order.routes'));
+const authRouter = require('./routes/auth.routes');
+const productRouter = require('./routes/product.routes');
+const orderRouter = require('./routes/order.routes');
+
+app.use('/api/auth',          authRouter);
+app.use('/api/products',      productRouter);
+app.use('/api/orders',        orderRouter);
 app.use('/api/payment',       paymentRouter);
 app.use('/api/cart',          cartRouter);
 app.use('/api/reviews',       reviewRouter);
