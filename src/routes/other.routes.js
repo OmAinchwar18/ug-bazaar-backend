@@ -1,4 +1,5 @@
 const express = require('express');
+const fetch = (...args) => import('node-fetch').then(({default: f}) => f(...args));
 const crypto  = require('crypto');
 const { protect, adminOnly } = require('../middleware/auth.middleware');
 const { Review, Coupon, Cart, Notification } = require('../models/other.models');
@@ -43,6 +44,9 @@ notifRouter.put('/mark-all-read', protect, async (req,res) => { try { await Noti
 
 // CHATBOT
 const chatRouter = express.Router();
+chatRouter.get('/', (req, res) => {
+  res.json({ success: true, message: 'Chat API working!' });
+});
 chatRouter.post('/chat', async (req, res) => {
   try {
     const { message, system } = req.body;
