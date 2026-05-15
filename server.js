@@ -1,4 +1,5 @@
 require('dotenv').config();
+// Force redeploy v2
 console.log('ENV CHECK - MONGO_URI:', process.env.MONGO_URI ? 'SET' : 'NOT SET');
 console.log('ENV CHECK - PORT:', process.env.PORT);
 const app = require('./src/app');
