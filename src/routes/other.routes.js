@@ -1,5 +1,5 @@
 const express = require('express');
-const fetch = (...args) => import('node-fetch').then(({default: f}) => f(...args));
+const https = require('https');
 const crypto  = require('crypto');
 const { protect, adminOnly } = require('../middleware/auth.middleware');
 const { Review, Coupon, Cart, Notification } = require('../models/other.models');
@@ -47,23 +47,44 @@ const chatRouter = express.Router();
 chatRouter.get('/', (req, res) => {
   res.json({ success: true, message: 'Chat API working!' });
 });
-chatRouter.post('/chat', async (req, res) => {
+chatRouter.post('/', async (req, res) => {
   try {
     const { message, system } = req.body;
     const GEMINI_KEY = process.env.GEMINI_API_KEY;
     
-    const response = await fetch(
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + GEMINI_KEY,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: system + '\n\n' + message }] }]
-        })
+    const postData = JSON.stringify({
+      contents: [{ 
+        parts: [{ text: (system || '') + '\n\n' + (message || '') }]
+      }]
+    });
+
+    const options = {
+      hostname: 'generativelanguage.googleapis.com',
+      path: '/v1beta/models/gemini-2.0-flash:generateContent?key=' + GEMINI_KEY,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(postData)
       }
-    );
-    const data = await response.json();
-    const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response';
+    };
+
+    const reply = await new Promise((resolve, reject) => {
+      const request = https.request(options, (response) => {
+        let data = '';
+        response.on('data', chunk => data += chunk);
+        response.on('end', () => {
+          try {
+            const parsed = JSON.parse(data);
+            const text = parsed.candidates?.[0]?.content?.parts?.[0]?.text;
+            resolve(text || 'No response');
+          } catch(e) { resolve('Parse error'); }
+        });
+      });
+      request.on('error', reject);
+      request.write(postData);
+      request.end();
+    });
+
     res.json({ success: true, reply });
   } catch(e) {
     res.status(500).json({ success: false, reply: 'Error: ' + e.message });
