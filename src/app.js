@@ -19,7 +19,7 @@ app.use((req, res, next) => {
   }
 });
 
-const { paymentRouter, cartRouter, reviewRouter, couponRouter, adminRouter, notifRouter } = require('./routes/other.routes');
+const { paymentRouter, cartRouter, reviewRouter, couponRouter, adminRouter, notifRouter, chatRouter } = require('./routes/other.routes');
 const authRouter = require('./routes/auth.routes');
 const productRouter = require('./routes/product.routes');
 const orderRouter = require('./routes/order.routes');
@@ -33,6 +33,7 @@ app.use('/api/reviews',       reviewRouter);
 app.use('/api/coupons',       couponRouter);
 app.use('/api/admin',         adminRouter);
 app.use('/api/notifications', notifRouter);
+app.use('/api/chat',          chatRouter);
 app.use('*', (req, res) => res.status(404).json({ success: false, message: `Route ${req.originalUrl} not found` }));
 app.use((err, req, res, next) => res.status(err.statusCode || 500).json({ success: false, message: err.message }));
 module.exports = app;

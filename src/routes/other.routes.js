@@ -41,4 +41,29 @@ notifRouter.get('/', protect, async (req,res) => { try { const notifs=await Noti
 notifRouter.put('/:id/read', protect, async (req,res) => { try { await Notification.findByIdAndUpdate(req.params.id,{read:true}); res.json({success:true}); } catch(e){ res.status(500).json({success:false,message:e.message}); }});
 notifRouter.put('/mark-all-read', protect, async (req,res) => { try { await Notification.updateMany({user:req.user._id,read:false},{read:true}); res.json({success:true}); } catch(e){ res.status(500).json({success:false,message:e.message}); }});
 
-module.exports = { paymentRouter, cartRouter, reviewRouter, couponRouter, adminRouter, notifRouter };
+// CHATBOT
+const chatRouter = express.Router();
+chatRouter.post('/chat', async (req, res) => {
+  try {
+    const { message, system } = req.body;
+    const GEMINI_KEY = process.env.GEMINI_API_KEY;
+    
+    const response = await fetch(
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + GEMINI_KEY,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: system + '\n\n' + message }] }]
+        })
+      }
+    );
+    const data = await response.json();
+    const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response';
+    res.json({ success: true, reply });
+  } catch(e) {
+    res.status(500).json({ success: false, reply: 'Error: ' + e.message });
+  }
+});
+
+module.exports = { paymentRouter, cartRouter, reviewRouter, couponRouter, adminRouter, notifRouter, chatRouter };
